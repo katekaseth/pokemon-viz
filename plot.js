@@ -1,9 +1,10 @@
 "use-strict";
 
-let data = "";
-let plotContainer = "";
+let data;
+let plotContainer ;
+let legendContainer;
 const msm = {
-    width: 1200,
+    width: 1000,
     height: 800,
     marginAll: 50,
     marginLeft: 50,
@@ -32,6 +33,10 @@ window.onload = function () {
         .append('svg')
         .attr('width', msm.width)
         .attr('height', msm.height);
+    legendContainer = d3.select("#legend")
+        .append('svg')
+        .attr('width', 200)
+        .attr('height', msm.height);
     // d3.csv is basically fetch but it can be be passed a csv file as a parameter
     d3.csv("pokemon.csv")
         .then((d) => makeScatterPlot(d))
@@ -46,6 +51,30 @@ function makeScatterPlot(d) {
     drawAxes(scalers);
     drawAxesLabels();
     plotData(scalers);
+    addTypeLegend();
+}
+
+function addTypeLegend() {
+    let colorArray = Object.values(colors)
+    legendContainer.append('g')
+        .selectAll("rect")
+        .data(colorArray)
+        .enter()
+        .append("rect")
+        .attr("x", 10)
+        .attr("y", function (d, i) { return 130 + (i * 30)})
+        .attr("width", 20)
+        .attr("height", 20)
+        .attr("fill", function (d) { return d })
+    let typeArray = Object.keys(colors)
+    legendContainer.append('g')
+        .selectAll("text")
+        .data(typeArray)
+        .enter()
+        .append("text")
+        .attr("x", 35)
+        .attr("y", function (d, i) { return 145 + (i * 30)})
+        .text(function (d) { return d })
 }
 
 function plotData(scalers) {
@@ -105,8 +134,6 @@ function plotData(scalers) {
             d3.select(nodes[i])
                 .call(mouseOutFunc);
         });
-    
-    
 }
 
 // find min and max for arrays of x and y
