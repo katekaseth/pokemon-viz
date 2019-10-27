@@ -54,6 +54,24 @@ function plotData(scalers) {
         .attr("class", "tooltip")
         .style("opacity", 0);
     
+    const mouseOverFunc = selection =>
+        selection.transition()
+            .duration(300)
+            .style("opacity", 1)
+            .attr("r", 16);
+    
+    const mouseOutFunc = selection =>
+        selection.transition()
+            .duration(500)
+            .style("opacity", .8)
+            .attr("r", 10)
+
+    d3.selection.prototype.moveToFront = function() {
+        return this.each(function(){
+            this.parentNode.appendChild(this);
+        });
+    };
+
     // add dots
     plotContainer.append('g')
         .selectAll("dot")
@@ -66,22 +84,29 @@ function plotData(scalers) {
         .attr('stroke', "black")
         .attr('stroke-width', 1)
         .attr('fill', function (d) { return colors[d["Type 1"]]})
-        .on("mouseover", (d) => {
+        .style('opacity', .8)
+        .on("mouseover", (d, i, nodes) => {
+            d3.select(nodes[i])
+                .call(mouseOverFunc);
+            d3.select(nodes[i]).moveToFront();
             tooltipDiv.transition()
                 .duration(200)
                 .style("opacity", 1)
-            tooltipDiv.html("<b>" + d["Name"] + "</b> <br/>" +
-                            d["Type 1"] + "<br/>" +
-                            d["Type 2"] + "<br/>")
-                .style("left", (d3.event.pageX) + "px")
+             tooltipDiv.html("<b>" + d["Name"] + "</b> <br/>" +
+                        d["Type 1"] + "<br/>" +
+                        d["Type 2"] + "<br/>")
+                .style("left", (d3.event.pageX + 5) + "px")
                 .style("top", (d3.event.pageY - 10) + "px");
         })
-        .on("mouseout", (d) => {
+        .on("mouseout", (d, i, nodes) => {
             tooltipDiv.transition()
                 .duration(500)
                 .style("opacity", 0);
+            d3.select(nodes[i])
+                .call(mouseOutFunc);
         });
-
+    
+    
 }
 
 // find min and max for arrays of x and y
@@ -143,14 +168,4 @@ function drawAxesLabels() {
         .attr('transform', 'translate( 15,' + (msm.height / 2 + 30) + ') rotate(-90)')
         .style('font-size', '10pt')
         .text("Total Stats");
-}
-
-// returns the width of the text if the font is helvetica
-function measureText(string, fontSize = 14) {
-    const widths = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.0546875,0.4,0.6,0.8,0.8,1.1,0.9,0.4,0.6,0.5,0.6,0.8,0.4,0.5,0.4,0.5,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.4,0.4,0.8,0.8,0.8,0.8,1.2,0.9,0.9,0.9,0.9,0.9,0.8,1,0.9,0.4,0.7,0.9,0.8,1,0.9,1,0.9,1,0.9,0.9,0.8,0.9,0.9,1.2,0.9,0.9,0.8,0.5,0.5,0.5,0.7,0.9,0.5,0.8,0.8,0.7,0.7,0.8,0.5,0.7,0.7,0.4,0.5,0.8,0.4,1,0.7,0.8,0.8,0.7,0.6,0.7,0.5,0.7,0.7,1.1,0.7,0.7,0.7,0.6,0.4,0.6,0.8]
-    const avg = 0.7342598684210524
-    return string
-      .split('')
-      .map(c => c.charCodeAt(0) < widths.length ? widths[c.charCodeAt(0)] : avg)
-      .reduce((cur, acc) => acc + cur) * fontSize
 }
