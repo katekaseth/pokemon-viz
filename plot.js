@@ -40,12 +40,48 @@ window.onload = function () {
 function makeScatterPlot(d) {
     data = d;
     let spDef = data.map((row) => parseInt(row["Sp. Def"]));
-    let total = data.map((row) => parseFloat(row["Total"]));
+    let total = data.map((row) => parseInt(row["Total"]));
     let axesMinMax = findMinMax(spDef, total);
     let scalers = getScalers(axesMinMax);
     drawAxes(scalers);
     drawAxesLabels();
     plotData(scalers);
+}
+
+function plotData(scalers) {
+    // make tooltip
+    let tooltipDiv = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+    
+    // add dots
+    plotContainer.append('g')
+        .selectAll("dot")
+        .data(data)
+        .enter()
+        .append("circle")
+        .attr("cx", function (d) { return scalers.xScale(d["Sp. Def"]); } )
+        .attr("cy", function (d) { return scalers.yScale(d["Total"]); } )
+        .attr("r", 10)
+        .attr('stroke', "black")
+        .attr('stroke-width', 1)
+        .attr('fill', function (d) { return colors[d["Type 1"]]})
+        .on("mouseover", (d) => {
+            tooltipDiv.transition()
+                .duration(200)
+                .style("opacity", 1)
+            tooltipDiv.html("<b>" + d["Name"] + "</b> <br/>" +
+                            d["Type 1"] + "<br/>" +
+                            d["Type 2"] + "<br/>")
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 10) + "px");
+        })
+        .on("mouseout", (d) => {
+            tooltipDiv.transition()
+                .duration(500)
+                .style("opacity", 0);
+        });
+
 }
 
 // find min and max for arrays of x and y
@@ -109,16 +145,12 @@ function drawAxesLabels() {
         .text("Total Stats");
 }
 
-function plotData(scalers) {
-    plotContainer.append('g')
-        .selectAll("dot")
-        .data(data)
-        .enter()
-        .append("circle")
-        .attr("cx", function (d) { return scalers.xScale(d["Sp. Def"]); } )
-        .attr("cy", function (d) { return scalers.yScale(d["Total"]); } )
-        .attr("r", 10)
-        .attr('stroke', "black")
-        .attr('stroke-width', 1)
-        .attr('fill', function (d) { return colors[d["Type 1"]]})
+// returns the width of the text if the font is helvetica
+function measureText(string, fontSize = 14) {
+    const widths = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.0546875,0.4,0.6,0.8,0.8,1.1,0.9,0.4,0.6,0.5,0.6,0.8,0.4,0.5,0.4,0.5,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.4,0.4,0.8,0.8,0.8,0.8,1.2,0.9,0.9,0.9,0.9,0.9,0.8,1,0.9,0.4,0.7,0.9,0.8,1,0.9,1,0.9,1,0.9,0.9,0.8,0.9,0.9,1.2,0.9,0.9,0.8,0.5,0.5,0.5,0.7,0.9,0.5,0.8,0.8,0.7,0.7,0.8,0.5,0.7,0.7,0.4,0.5,0.8,0.4,1,0.7,0.8,0.8,0.7,0.6,0.7,0.5,0.7,0.7,1.1,0.7,0.7,0.7,0.6,0.4,0.6,0.8]
+    const avg = 0.7342598684210524
+    return string
+      .split('')
+      .map(c => c.charCodeAt(0) < widths.length ? widths[c.charCodeAt(0)] : avg)
+      .reduce((cur, acc) => acc + cur) * fontSize
 }
