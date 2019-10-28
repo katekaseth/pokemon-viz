@@ -41,7 +41,7 @@ window.onload = function () {
     legendContainer = d3.select("#legend")
         .append('svg')
         .attr('width', 200)
-        .attr('height', msm.height);
+        .attr('height', msm.height)
     d3.csv("pokemon.csv")
         .then((d) => main(d))
 }
@@ -49,7 +49,7 @@ window.onload = function () {
 function main(d) {
     allData = d;
     makeScatterPlot(d);
-    addTypeLegend();
+    addTypeLegend(d);
     legendSelection = "All";
     genSelection = "All";
     makeGenerationFilter();
@@ -74,6 +74,7 @@ function makeLegendaryFilter() {
         }
         plotContainer.selectAll("*").remove()
         makeScatterPlot(filteredData)
+        addTypeLegend(filteredData);
     });
 }
 
@@ -115,6 +116,7 @@ function makeGenerationFilter() {
         }
         plotContainer.selectAll("*").remove();
         makeScatterPlot(filteredData);
+        addTypeLegend(filteredData);
     });
 }
 
@@ -128,11 +130,34 @@ function makeScatterPlot(data) {
     plotData(scalers, data);
 }
 
-function addTypeLegend() {
-    let colorArray = Object.values(colors)
+function addTypeLegend(data) {
+    const typeArray = Object.keys(colors)
+    // const colorArray = Object.values(colors)
+
+    legendContainer.selectAll("*").remove()
+    let distinctType1 = [...new Set(data.map(d => d["Type 1"]))];
+    let intersection = typeArray.filter(x => distinctType1.includes(x))
+    console.log(intersection)
+    legendContainer.append('g')
+        .selectAll("text")
+        .data(intersection)
+        .enter()
+        .append("text")
+        .attr("x", 35)
+        .attr("y", function (d, i) {
+            return 145 + (i * 30)
+        })
+        .text(function (d) {
+            return d
+        })
+
+    let colorInter = [];
+    intersection.forEach(function(element) {
+        colorInter.push(colors[element])
+    })
     legendContainer.append('g')
         .selectAll("rect")
-        .data(colorArray)
+        .data(colorInter)
         .enter()
         .append("rect")
         .attr("x", 10)
@@ -144,19 +169,11 @@ function addTypeLegend() {
         .attr("fill", function (d) {
             return d
         })
-    let typeArray = Object.keys(colors)
-    legendContainer.append('g')
-        .selectAll("text")
-        .data(typeArray)
-        .enter()
-        .append("text")
-        .attr("x", 35)
-        .attr("y", function (d, i) {
-            return 145 + (i * 30)
-        })
-        .text(function (d) {
-            return d
-        })
+
+    legendContainer.append("text")
+        .attr("x", 10)
+        .attr("y", 110)
+        .text("Type 1")
 }
 
 function plotData(scalers, data) {
@@ -212,8 +229,7 @@ function plotData(scalers, data) {
                 .style("opacity", 1)
             tooltipDiv.html("<b>" + d["Name"] + "</b> <br/>" +
                     d["Type 1"] + "<br/>" +
-                    d["Type 2"] + "<br/>" +
-                    d["Generation"])
+                    d["Type 2"] + "<br/>")
                 .style("left", (d3.event.pageX + 5) + "px")
                 .style("top", (d3.event.pageY - 10) + "px");
         })
