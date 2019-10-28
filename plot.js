@@ -11,21 +11,24 @@ const msm = {
 }
 
 const colors = {
-    "Bug": "#4E79A7",
-    "Dark": "#A0CBE8",
-    "Electric": "#F28E2B",
-    "Fairy": "#FFBE&D",
-    "Fighting": "#59A14F",
-    "Fire": "#8CD17D",
-    "Ghost": "#B6992D",
-    "Grass": "#499894",
-    "Ground": "#86BCB6",
-    "Ice": "#86BCB6",
-    "Normal": "#E15759",
-    "Poison": "#FF9D9A",
-    "Psychic": "#79706E",
-    "Steel": "#BAB0AC",
-    "Water": "#D37295"
+    "Bug": "#A6B91A",
+    "Dark": "#705746",
+    "Dragon": "#6F35FC",
+    "Electric": "#F7D02C",
+    "Fairy": "#D685AD",
+    "Fighting": "#C22E28",
+    "Fire": "#EE8130",
+    "Flying": "#A98FF3",
+    "Ghost": "#735797",
+    "Grass": "#7AC74C",
+    "Ground": "#E2BF65",
+    "Ice": "#96D9D6",
+    "Normal": "#A8A77A",
+    "Poison": "#A33EA1",
+    "Psychic": "#F95587",
+    "Rock": "#B6A136",
+    "Steel": "#B7B7CE",
+    "Water": "#6390F0"
 }
 
 window.onload = function () {
@@ -52,6 +55,48 @@ function makeScatterPlot(d) {
     drawAxesLabels();
     plotData(scalers);
     addTypeLegend();
+
+    let dropDown = d3.select("#filter").append("select")
+        .attr("name", "generation");
+
+    let distinctGens = [...new Set(data.map(d => d["Generation"]))];
+    //distinctGens.add("All")
+    distinctGens.push("All")
+    let defaultGen = "All";
+
+    let options = dropDown.selectAll("option")
+           .data(distinctGens)
+           .enter()
+           .append("option")
+           .text(function (d) { return d; })
+           .attr("value", function (d) { return d; })
+           .attr("selected", function(d){ return d === defaultGen })
+           
+    showCircles(dropDown.node());//this will filter initially
+    dropDown.on("change", function() {
+        showCircles(this)
+    });
+}
+
+function showCircles(me) {
+    let selected = me.value;
+    if (selected === "All") {
+        displayOthers = "inline";
+        display = "inline";
+    } else {
+        displayOthers = me.checked ? "inline" : "none";
+        display = me.checked ? "none" : "inline";
+    }
+    
+    plotContainer.selectAll(".circles")
+        .data(data)
+        .filter(function(d) {return selected !== d["Generation"];})
+        .attr("display", displayOthers);
+        
+    plotContainer.selectAll(".circles")
+        .data(data)
+        .filter(function(d) {return selected === d["Generation"];})
+        .attr("display", display);
 }
 
 function addTypeLegend() {
@@ -113,6 +158,7 @@ function plotData(scalers) {
         .attr('stroke', "black")
         .attr('stroke-width', 1)
         .attr('fill', function (d) { return colors[d["Type 1"]]})
+        .attr("class", "circles")
         .style('opacity', .8)
         .on("mouseover", (d, i, nodes) => {
             d3.select(nodes[i])
