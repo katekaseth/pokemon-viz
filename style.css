@@ -29,3 +29,7 @@ div.tooltip {
 b {
     font: 15px helvetica;
 }
+
+.pad {
+    padding: 20px;
+}

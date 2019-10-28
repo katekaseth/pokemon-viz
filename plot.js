@@ -2,13 +2,14 @@
 
 let allData;
 let filteredData;
+let genSelection;
+let legendSelection;
 let plotContainer;
 let legendContainer;
 const msm = {
     width: 1000,
     height: 800,
     marginAll: 50,
-    marginLeft: 50,
 }
 
 const colors = {
@@ -41,7 +42,6 @@ window.onload = function () {
         .append('svg')
         .attr('width', 200)
         .attr('height', msm.height);
-    // d3.csv is basically fetch but it can be be passed a csv file as a parameter
     d3.csv("pokemon.csv")
         .then((d) => main(d))
 }
@@ -50,7 +50,31 @@ function main(d) {
     allData = d;
     makeScatterPlot(d);
     addTypeLegend();
+    legendSelection = "All";
+    genSelection = "All";
     makeGenerationFilter();
+    makeLegendaryFilter();
+}
+
+function makeLegendaryFilter() {
+    d3.selectAll("input").on("change", function() {
+        legendSelection = this.value;
+        let toBeFiltered = allData;
+        if (genSelection !== "All") {
+            toBeFiltered = allData.filter((row) => { 
+                return row["Generation"] === genSelection
+            });
+        }
+        if (legendSelection === "All") {
+            filteredData = toBeFiltered;
+        } else {
+            filteredData = toBeFiltered.filter((row) => {
+                return row["Legendary"] === legendSelection
+            });
+        }
+        plotContainer.selectAll("*").remove()
+        makeScatterPlot(filteredData)
+    });
 }
 
 function makeGenerationFilter() {
@@ -59,9 +83,8 @@ function makeGenerationFilter() {
 
     let distinctGens = [...new Set(allData.map(d => d["Generation"]))];
     distinctGens.push("All")
-    let defaultGen = "All";
 
-    let options = dropDown.selectAll("option")
+    dropDown.selectAll("option")
         .data(distinctGens)
         .enter()
         .append("option")
@@ -72,22 +95,26 @@ function makeGenerationFilter() {
             return d;
         })
         .attr("selected", function (d) {
-            return d === defaultGen
+            return d === "All"
         })
 
-    // showCircles(dropDown.node()); //this will filter initially
     dropDown.on("change", function () {
-        // showCircles(this)
-        let selected = this.value;
-        if (selected === "All") {
-            filteredData = allData;
+        genSelection = this.value;
+        let toBeFiltered = allData;
+        if (legendSelection !== "All") {
+            toBeFiltered = allData.filter((row) => { 
+                return row["Legendary"] === legendSelection
+            });
+        } 
+        if (genSelection === "All") {
+            filteredData = toBeFiltered;
         } else {
-            filteredData = allData.filter((row) => {
-                return row["Generation"] === selected
-            })
+            filteredData = toBeFiltered.filter((row) => {
+                return row["Generation"] === genSelection
+            });
         }
-        plotContainer.selectAll("*").remove()
-        makeScatterPlot(filteredData)
+        plotContainer.selectAll("*").remove();
+        makeScatterPlot(filteredData);
     });
 }
 
@@ -185,7 +212,8 @@ function plotData(scalers, data) {
                 .style("opacity", 1)
             tooltipDiv.html("<b>" + d["Name"] + "</b> <br/>" +
                     d["Type 1"] + "<br/>" +
-                    d["Type 2"] + "<br/>")
+                    d["Type 2"] + "<br/>" +
+                    d["Generation"])
                 .style("left", (d3.event.pageX + 5) + "px")
                 .style("top", (d3.event.pageY - 10) + "px");
         })
