@@ -2,6 +2,10 @@ div {
     float: left
 }
 
+.fixed {
+    width: 1300px;
+}
+
 div.tooltip {
     position: absolute;
     text-align: left;
