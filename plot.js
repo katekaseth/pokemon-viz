@@ -168,7 +168,7 @@ function transitionDots(filteredData) {
         })
         .attr("r", 10)
         .attr('stroke', "black")
-        .attr('stroke-width', 1)
+        .attr('stroke-width', .5)
         .attr('fill', function (d) {
             return colors[d["Type 1"]]
         })
@@ -262,7 +262,7 @@ function plotData(scalers, data) {
         })
         .attr("r", 10)
         .attr('stroke', "black")
-        .attr('stroke-width', 1)
+        .attr('stroke-width', .5)
         .attr('fill', function (d) {
             return colors[d["Type 1"]]
         })
