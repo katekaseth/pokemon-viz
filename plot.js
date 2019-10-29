@@ -411,7 +411,12 @@ function getSameStatPokemons(data) {
 // given a 2d array to search and the element to find
 // return the row containing the element
 function searchArray(array, find) {
-    for (let i = 0, l = array.length; i < l; i++) {
-        if (array[i][1] === find) return array[i];
+    for (let i = 0; i < array.length; i++) {
+        let cur = array[i]
+        // looks at the last index specifically because that will
+        // be the last element looked at & drawn
+        if (cur[cur.length - 1] === find) {
+            return array[i];
+        }
     }
 }
