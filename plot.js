@@ -6,6 +6,8 @@ let genSelection;
 let legendSelection;
 let plotContainer;
 let legendContainer;
+let tooltipDiv;
+let scalers;
 const msm = {
     width: 1000,
     height: 800,
@@ -33,6 +35,18 @@ const colors = {
     "Water": "#6390F0"
 }
 
+const mouseOverFunc = selection =>
+    selection.transition()
+    .duration(300)
+    .style("opacity", 1)
+    .attr("r", 13);
+
+const mouseOutFunc = selection =>
+    selection.transition()
+    .duration(500)
+    .style("opacity", .8)
+    .attr("r", 10)
+
 window.onload = function () {
     plotContainer = d3.select("#plot")
         .append('svg')
@@ -42,12 +56,16 @@ window.onload = function () {
         .append('svg')
         .attr('width', 200)
         .attr('height', msm.height)
+    tooltipDiv = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
     d3.csv("pokemon.csv")
         .then((d) => main(d))
 }
 
 function main(d) {
     allData = d;
+    filteredData = d;
     makeScatterPlot(d);
     addTypeLegend(d);
     legendSelection = "All";
@@ -57,11 +75,11 @@ function main(d) {
 }
 
 function makeLegendaryFilter() {
-    d3.selectAll("input").on("change", function() {
+    d3.selectAll("input").on("change", function () {
         legendSelection = this.value;
         let toBeFiltered = allData;
         if (genSelection !== "All") {
-            toBeFiltered = allData.filter((row) => { 
+            toBeFiltered = allData.filter((row) => {
                 return row["Generation"] === genSelection
             });
         }
@@ -72,8 +90,9 @@ function makeLegendaryFilter() {
                 return row["Legendary"] === legendSelection
             });
         }
-        plotContainer.selectAll("*").remove()
-        makeScatterPlot(filteredData)
+        // plotContainer.selectAll("*").remove()
+        // makeScatterPlot(filteredData)
+        transitionDots(filteredData);
         addTypeLegend(filteredData);
     });
 }
@@ -100,13 +119,14 @@ function makeGenerationFilter() {
         })
 
     dropDown.on("change", function () {
+        let oldLength = filteredData.length;
         genSelection = this.value;
         let toBeFiltered = allData;
         if (legendSelection !== "All") {
-            toBeFiltered = allData.filter((row) => { 
+            toBeFiltered = allData.filter((row) => {
                 return row["Legendary"] === legendSelection
             });
-        } 
+        }
         if (genSelection === "All") {
             filteredData = toBeFiltered;
         } else {
@@ -114,17 +134,60 @@ function makeGenerationFilter() {
                 return row["Generation"] === genSelection
             });
         }
-        plotContainer.selectAll("*").remove();
-        makeScatterPlot(filteredData);
+        //plotContainer.selectAll("*").remove();
+        //makeScatterPlot(filteredData);
+        transitionDots(filteredData);
         addTypeLegend(filteredData);
     });
+}
+
+function transitionDots(filteredData) {
+    let circles = plotContainer.selectAll("circle")
+        .data(filteredData)
+
+    // add new circles if they aren't already there
+    // and merge with the circles already there
+    circles
+        .enter()
+        .append("circle")
+        .on("mouseover", (d, i, nodes) => {
+            dotMouseOver(d, i, nodes);
+        })
+        .on("mouseout", (_, i, nodes) => {
+            dotMouseOut(i, nodes);
+        })
+        .merge(circles)
+        .transition()
+        .duration(1000)
+        .attr("cx", function (d) {
+            return scalers.xScale(d["Sp. Def"]);
+        })
+        .attr("cy", function (d) {
+            return scalers.yScale(d["Total"]);
+        })
+        .attr("r", 10)
+        .attr('stroke', "black")
+        .attr('stroke-width', 1)
+        .attr('fill', function (d) {
+            return colors[d["Type 1"]]
+        })
+        .style('opacity', .8)
+        
+        
+
+    // get rid of circles that aren't in the data anymore
+    circles.exit()
+        .transition()
+        .duration(1000)
+        .style("opacity", 0)
+        .remove()
 }
 
 function makeScatterPlot(data) {
     let spDef = data.map((row) => parseInt(row["Sp. Def"]));
     let total = data.map((row) => parseInt(row["Total"]));
     let axesMinMax = findMinMax(spDef, total);
-    let scalers = getScalers(axesMinMax);
+    scalers = getScalers(axesMinMax);
     drawAxes(scalers);
     drawAxesLabels();
     plotData(scalers, data);
@@ -132,12 +195,9 @@ function makeScatterPlot(data) {
 
 function addTypeLegend(data) {
     const typeArray = Object.keys(colors)
-    // const colorArray = Object.values(colors)
-
     legendContainer.selectAll("*").remove()
     let distinctType1 = [...new Set(data.map(d => d["Type 1"]))];
     let intersection = typeArray.filter(x => distinctType1.includes(x))
-    console.log(intersection)
     legendContainer.append('g')
         .selectAll("text")
         .data(intersection)
@@ -152,7 +212,7 @@ function addTypeLegend(data) {
         })
 
     let colorInter = [];
-    intersection.forEach(function(element) {
+    intersection.forEach(function (element) {
         colorInter.push(colors[element])
     })
     legendContainer.append('g')
@@ -161,7 +221,7 @@ function addTypeLegend(data) {
         .enter()
         .append("rect")
         .attr("x", 10)
-        .attr("y", function (d, i) {
+        .attr("y", function (_, i) {
             return 130 + (i * 30)
         })
         .attr("width", 20)
@@ -177,23 +237,6 @@ function addTypeLegend(data) {
 }
 
 function plotData(scalers, data) {
-    // make tooltip
-    let tooltipDiv = d3.select("body").append("div")
-        .attr("class", "tooltip")
-        .style("opacity", 0);
-
-    const mouseOverFunc = selection =>
-        selection.transition()
-        .duration(300)
-        .style("opacity", 1)
-        .attr("r", 16);
-
-    const mouseOutFunc = selection =>
-        selection.transition()
-        .duration(500)
-        .style("opacity", .8)
-        .attr("r", 10)
-
     d3.selection.prototype.moveToFront = function () {
         return this.each(function () {
             this.parentNode.appendChild(this);
@@ -221,25 +264,33 @@ function plotData(scalers, data) {
         .attr("class", "circles")
         .style('opacity', .8)
         .on("mouseover", (d, i, nodes) => {
-            d3.select(nodes[i])
-                .call(mouseOverFunc);
-            d3.select(nodes[i]).moveToFront();
-            tooltipDiv.transition()
-                .duration(200)
-                .style("opacity", 1)
-            tooltipDiv.html("<b>" + d["Name"] + "</b> <br/>" +
-                    d["Type 1"] + "<br/>" +
-                    d["Type 2"] + "<br/>")
-                .style("left", (d3.event.pageX + 5) + "px")
-                .style("top", (d3.event.pageY - 10) + "px");
+            dotMouseOver(d, i, nodes);
         })
-        .on("mouseout", (d, i, nodes) => {
-            tooltipDiv.transition()
-                .duration(500)
-                .style("opacity", 0);
-            d3.select(nodes[i])
-                .call(mouseOutFunc);
+        .on("mouseout", (_, i, nodes) => {
+            dotMouseOut(i, nodes);
         });
+}
+
+function dotMouseOut(i, nodes) {
+    tooltipDiv.transition()
+        .duration(500)
+        .style("opacity", 0);
+    d3.select(nodes[i])
+        .call(mouseOutFunc);
+}
+
+function dotMouseOver(d, i, nodes) {
+    d3.select(nodes[i])
+        .call(mouseOverFunc);
+    d3.select(nodes[i]).moveToFront();
+    tooltipDiv.transition()
+        .duration(200)
+        .style("opacity", 1)
+    tooltipDiv.html("<b>" + d["Name"] + "</b> <br/>" +
+            d["Type 1"] + "<br/>" +
+            d["Type 2"] + "<br/>")
+        .style("left", (d3.event.pageX + 5) + "px")
+        .style("top", (d3.event.pageY - 10) + "px");
 }
 
 // find min and max for arrays of x and y
@@ -261,7 +312,7 @@ function getScalers(axesMinMax) {
 
     // function to scale y
     let yScale = d3.scaleLinear()
-        .domain([axesMinMax.yMax + 50, axesMinMax.yMin - 50]) // give domain buffer
+        .domain([axesMinMax.yMax + 20, axesMinMax.yMin - 20]) // give domain buffer
         .range([msm.marginAll, msm.height - msm.marginAll]);
 
     return {
